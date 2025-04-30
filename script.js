@@ -57,5 +57,5 @@ function startEncoder() {
     if (keyFreqMap[key]) {
       playFrequency(keyFreqMap[key]);
     }
-  }, { once: true });
+ });
 }
