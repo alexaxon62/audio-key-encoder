@@ -1,5 +1,6 @@
 let keyFreqMap = {};
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let isAudioUnlocked = false;
 
 function seededRandom(seed) {
   let x = Math.sin(seed) * 10000;
@@ -21,7 +22,7 @@ function createKeyFrequencyMap(seed) {
 
   keys.forEach((key, index) => {
     const rand = seededRandom(seedInt + index);
-    map[key] = 200 + Math.floor(rand * 1800);
+    map[key] = 200 + Math.floor(rand * 1800); // Frequency between 200Hz to 2000Hz
   });
 
   return map;
@@ -49,19 +50,22 @@ function startEncoder() {
     return;
   }
 
-  // 🚀 Unlock audio context on user interaction
-  if (audioCtx.state === "suspended") {
-    audioCtx.resume();
+  // Unlock audio on first interaction
+  if (!isAudioUnlocked) {
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+    isAudioUnlocked = true;
   }
 
   keyFreqMap = createKeyFrequencyMap(seed);
   alert("Seed loaded! Now press keys to hear encoded sounds.");
 }
 
-  document.addEventListener("keydown", (e) => {
-    const key = e.key.toLowerCase();
-    if (keyFreqMap[key]) {
-      playFrequency(keyFreqMap[key]);
-    }
+// Listen for keypresses
+document.addEventListener("keydown", (e) => {
+  const key = e.key.toLowerCase();
+  if (keyFreqMap[key]) {
+    playFrequency(keyFreqMap[key]);
+  }
 });
-}
