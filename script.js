@@ -2,13 +2,15 @@ let audioCtx;
 let seed = '';
 
 function startEncoder() {
-  // Initialize AudioContext
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // Create AudioContext once and resume if needed
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } else if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
 
-  // Get seed from input
   seed = document.getElementById('seedInput').value || 'default';
 
-  // Add key listener if not already added
   if (!window.keyListenerAdded) {
     document.addEventListener('keydown', handleKeyPress);
     window.keyListenerAdded = true;
@@ -19,51 +21,49 @@ function startEncoder() {
 
 function handleKeyPress(e) {
   const key = e.key.toLowerCase();
-  if (!/^[a-z0-9]$/.test(key)) return; // Only handle a-z, 0-9
+  if (!/^[a-z0-9]$/.test(key)) return;
 
   const [freq1, freq2] = getFrequenciesForKey(key, seed);
   playDualTone(freq1, freq2);
 }
 
-// Simple seeded hash function to derive frequencies
 function getFrequenciesForKey(char, seed) {
   const combined = char + seed;
   let hash = 0;
   for (let i = 0; i < combined.length; i++) {
     hash = (hash << 5) - hash + combined.charCodeAt(i);
-    hash |= 0; // Convert to 32bit int
+    hash |= 0;
   }
 
-  // Generate two frequencies between typical DTMF ranges
-  const baseFreqs1 = [697, 770, 852, 941]; // low group
-  const baseFreqs2 = [1209, 1336, 1477, 1633]; // high group
+  const lowFreqs = [697, 770, 852, 941];
+  const highFreqs = [1209, 1336, 1477, 1633];
 
-  const freq1 = baseFreqs1[Math.abs(hash) % baseFreqs1.length];
-  const freq2 = baseFreqs2[Math.abs(hash >> 2) % baseFreqs2.length];
+  const freq1 = lowFreqs[Math.abs(hash) % lowFreqs.length];
+  const freq2 = highFreqs[Math.abs(hash >> 2) % highFreqs.length];
 
   return [freq1, freq2];
 }
 
-// Play both tones together
 function playDualTone(freq1, freq2, duration = 0.2) {
   const now = audioCtx.currentTime;
 
-  const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(0.2, now);
-  gain.connect(audioCtx.destination);
+  const gainNode = audioCtx.createGain();
+  gainNode.gain.setValueAtTime(0.2, now);
+  gainNode.connect(audioCtx.destination);
 
+  // Oscillator 1
   const osc1 = audioCtx.createOscillator();
   osc1.type = 'sine';
   osc1.frequency.setValueAtTime(freq1, now);
-  osc1.connect(gain);
+  osc1.connect(gainNode);
+  osc1.start(now);
+  osc1.stop(now + duration);
 
+  // Oscillator 2
   const osc2 = audioCtx.createOscillator();
   osc2.type = 'sine';
   osc2.frequency.setValueAtTime(freq2, now);
-  osc2.connect(gain);
-
-  osc1.start(now);
+  osc2.connect(gainNode);
   osc2.start(now);
-  osc1.stop(now + duration);
   osc2.stop(now + duration);
 }
