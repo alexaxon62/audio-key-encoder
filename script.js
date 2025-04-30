@@ -49,12 +49,14 @@ function playDualTones(lowFreq, highFreq, duration = 0.2) {
   highOscillator.connect(gain);
   gain.connect(audioCtx.destination);
 
-  // Start the low frequency, then high frequency
+  // Start the low frequency
   lowOscillator.start();
+  // Start the high frequency slightly after the low frequency
   highOscillator.start(audioCtx.currentTime + duration);
 
+  // Stop both frequencies after their duration
   lowOscillator.stop(audioCtx.currentTime + duration);
-  highOscillator.stop(audioCtx.currentTime + duration + 0.2); // A little overlap for the second tone
+  highOscillator.stop(audioCtx.currentTime + duration + 0.2); // Give a little overlap time
 }
 
 function startEncoder() {
