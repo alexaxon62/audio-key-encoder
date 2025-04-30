@@ -37,29 +37,38 @@ function createKeyFrequencyMap(seed) {
 function playDualTones(lowFreq, highFreq, duration = 0.2) {
   console.log(`Playing tones: Low - ${lowFreq}Hz, High - ${highFreq}Hz`);
 
+  // Create oscillators
   let lowOscillator = audioCtx.createOscillator();
   let highOscillator = audioCtx.createOscillator();
   let gain = audioCtx.createGain();
 
+  // Set oscillator types and frequencies
   lowOscillator.type = 'sine';
   highOscillator.type = 'sine';
 
   lowOscillator.frequency.setValueAtTime(lowFreq, audioCtx.currentTime);
   highOscillator.frequency.setValueAtTime(highFreq, audioCtx.currentTime);
 
+  // Set gain
   gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
 
+  // Connect oscillators to gain and then to the destination
   lowOscillator.connect(gain);
   highOscillator.connect(gain);
   gain.connect(audioCtx.destination);
 
-  // Start both tones at the same time
-  lowOscillator.start();
-  highOscillator.start();
+  // Get the current time and start both oscillators at the same time
+  let startTime = audioCtx.currentTime;
+  console.log(`Start time for both tones: ${startTime}`);
+
+  lowOscillator.start(startTime);
+  highOscillator.start(startTime);
 
   // Stop the oscillators after the duration
-  lowOscillator.stop(audioCtx.currentTime + duration);
-  highOscillator.stop(audioCtx.currentTime + duration);
+  lowOscillator.stop(startTime + duration);
+  highOscillator.stop(startTime + duration);
+
+  console.log('Tones started simultaneously');
 }
 
 function startEncoder() {
