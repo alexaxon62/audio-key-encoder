@@ -3,21 +3,22 @@ let seed1 = '';
 let seed2 = '';
 
 function startEncoder() {
-  if (!audioCtx) {
+  if (!audioCtx || audioCtx.state === 'closed') {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } else if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
   }
 
-  seed1 = document.getElementById('seedInput1').value || 'seed1';
-  seed2 = document.getElementById('seedInput2').value || 'seed2';
+  // Resume context in case browser suspends it initially
+  audioCtx.resume().then(() => {
+    seed1 = document.getElementById('seedInput1').value || 'seed1';
+    seed2 = document.getElementById('seedInput2').value || 'seed2';
 
-  if (!window.keyListenerAdded) {
-    document.addEventListener('keydown', handleKeyPress);
-    window.keyListenerAdded = true;
-  }
+    if (!window.keyListenerAdded) {
+      document.addEventListener('keydown', handleKeyPress);
+      window.keyListenerAdded = true;
+    }
 
-  alert('Encoder started! Press keys to hear tones.');
+    alert('Encoder started! Press keys to hear tones.');
+  });
 }
 
 function handleKeyPress(e) {
@@ -29,7 +30,6 @@ function handleKeyPress(e) {
   playDualTone(freq1, freq2);
 }
 
-// Generate frequency from arbitrary string
 function hashToFrequency(input) {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
@@ -37,9 +37,8 @@ function hashToFrequency(input) {
     hash |= 0;
   }
 
-  const base = 200;      // Minimum frequency (Hz)
-  const range = 2000;    // Frequency range
-
+  const base = 200;
+  const range = 2000;
   return base + (Math.abs(hash) % range);
 }
 
