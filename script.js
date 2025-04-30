@@ -53,11 +53,13 @@ function playDualTones(lowFreq, highFreq, duration = 0.2) {
   highOscillator.connect(gain);
   gain.connect(audioCtx.destination);
 
+  // Start both tones at the same time
   lowOscillator.start();
-  highOscillator.start(audioCtx.currentTime + duration);
+  highOscillator.start();
 
+  // Stop the oscillators after the duration
   lowOscillator.stop(audioCtx.currentTime + duration);
-  highOscillator.stop(audioCtx.currentTime + duration + 0.2);
+  highOscillator.stop(audioCtx.currentTime + duration);
 }
 
 function startEncoder() {
