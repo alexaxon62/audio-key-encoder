@@ -50,7 +50,7 @@ function startEncoder() {
     return;
   }
 
-  // Unlock audio on first interaction
+  // Unlock audio on first interaction (button click)
   if (!isAudioUnlocked) {
     if (audioCtx.state === "suspended") {
       audioCtx.resume();
