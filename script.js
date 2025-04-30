@@ -24,9 +24,8 @@ function createKeyFrequencyMap(seed) {
     let lowFreq = 200 + Math.floor(seededRandom(seedInt + index) * 1000);
     let highFreq = 1200 + Math.floor(seededRandom(seedInt + index + 100) * 1000);
 
-    // Ensure the frequencies are different
     if (lowFreq === highFreq) {
-      highFreq = lowFreq + 100; // Make the high frequency 100Hz greater if they are equal
+      highFreq = lowFreq + 100;
     }
 
     map[key] = { lowFreq, highFreq };
@@ -54,17 +53,11 @@ function playDualTones(lowFreq, highFreq, duration = 0.2) {
   highOscillator.connect(gain);
   gain.connect(audioCtx.destination);
 
-  // Start the low tone
   lowOscillator.start();
-  console.log('Low tone started');
-
-  // Start the high tone slightly after the low tone
   highOscillator.start(audioCtx.currentTime + duration);
-  console.log('High tone started after delay');
 
-  // Stop the oscillators after the duration
   lowOscillator.stop(audioCtx.currentTime + duration);
-  highOscillator.stop(audioCtx.currentTime + duration + 0.2); // Stop the high tone slightly later
+  highOscillator.stop(audioCtx.currentTime + duration + 0.2);
 }
 
 function startEncoder() {
@@ -74,7 +67,6 @@ function startEncoder() {
     return;
   }
 
-  // Unlock audio on first interaction (button click)
   if (!isAudioUnlocked) {
     if (audioCtx.state === "suspended") {
       audioCtx.resume();
@@ -88,6 +80,7 @@ function startEncoder() {
 
 // Listen for keypresses
 document.addEventListener("keydown", (e) => {
+  console.log(`Key pressed: ${e.key}`);  // Log the key pressed to the console
   const key = e.key.toLowerCase();
   if (keyFreqMap[key]) {
     const { lowFreq, highFreq } = keyFreqMap[key];
