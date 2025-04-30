@@ -49,8 +49,14 @@ function startEncoder() {
     return;
   }
 
+  // 🚀 Unlock audio context on user interaction
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+
   keyFreqMap = createKeyFrequencyMap(seed);
   alert("Seed loaded! Now press keys to hear encoded sounds.");
+}
 
   document.addEventListener("keydown", (e) => {
     const key = e.key.toLowerCase();
