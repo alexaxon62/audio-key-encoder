@@ -1,69 +1,74 @@
-document.addEventListener('DOMContentLoaded', function () {
-  let audioCtx;
-  let seed1 = '';
-  let seed2 = '';
+let keyFreqMap = {};
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let isAudioUnlocked = false;
 
-  function startEncoder() {
-    if (!audioCtx || audioCtx.state === 'closed') {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function seededRandom(seed) {
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function hashSeedToInt(seed) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash);
+}
+
+function createKeyFrequencyMap(seed) {
+  const keys = "abcdefghijklmnopqrstuvwxyz0123456789".split("");
+  const seedInt = hashSeedToInt(seed);
+  let map = {};
+
+  keys.forEach((key, index) => {
+    const rand1 = seededRandom(seedInt + index);
+    const rand2 = seededRandom(seedInt + index + 100); // offset for second tone
+    const freq1 = 200 + Math.floor(rand1 * 1800); // Frequency between 200Hz to 2000Hz
+    const freq2 = 200 + Math.floor(rand2 * 1800);
+    map[key] = [freq1, freq2];
+  });
+
+  return map;
+}
+
+function playFrequencies(freqArray, duration = 0.2) {
+  freqArray.forEach(freq => {
+    let oscillator = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+
+    oscillator.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration);
+  });
+}
+
+function startEncoder() {
+  const seed = document.getElementById("seedInput").value;
+  if (!seed) {
+    alert("Please enter a seed.");
+    return;
+  }
+
+  if (!isAudioUnlocked) {
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
     }
-
-    audioCtx.resume().then(() => {
-      seed1 = document.getElementById('seedInput1').value || 'seed1';
-      seed2 = document.getElementById('seedInput2').value || 'seed2';
-
-      if (!window.keyListenerAdded) {
-        document.addEventListener('keydown', handleKeyPress);
-        window.keyListenerAdded = true;
-      }
-
-      alert('Encoder started! Press keys to hear tones.');
-    });
+    isAudioUnlocked = true;
   }
 
-  function handleKeyPress(e) {
-    const key = e.key.toLowerCase();
-    if (!/^[a-z0-9]$/.test(key)) return;
+  keyFreqMap = createKeyFrequencyMap(seed);
+  alert("Seed loaded! Now press keys to hear encoded sounds.");
+}
 
-    const freq1 = hashToFrequency(key + seed1);
-    const freq2 = hashToFrequency(key + seed2);
-    playDualTone(freq1, freq2);
+document.addEventListener("keydown", (e) => {
+  const key = e.key.toLowerCase();
+  if (keyFreqMap[key]) {
+    playFrequencies(keyFreqMap[key]);
   }
-
-  function hashToFrequency(input) {
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      hash = (hash << 5) - hash + input.charCodeAt(i);
-      hash |= 0;
-    }
-
-    const base = 200;
-    const range = 2000;
-    return base + (Math.abs(hash) % range);
-  }
-
-  function playDualTone(freq1, freq2, duration = 0.3) {
-    const now = audioCtx.currentTime;
-
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.setValueAtTime(0.2, now);
-    gainNode.connect(audioCtx.destination);
-
-    const osc1 = audioCtx.createOscillator();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(freq1, now);
-    osc1.connect(gainNode);
-    osc1.start(now);
-    osc1.stop(now + duration);
-
-    const osc2 = audioCtx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(freq2, now);
-    osc2.connect(gainNode);
-    osc2.start(now);
-    osc2.stop(now + duration);
-  }
-
-  // Expose to global scope for the button to call
-  window.startEncoder = startEncoder;
 });
