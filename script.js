@@ -25,7 +25,7 @@ function playDualTones(lowFreq, highFreq, duration = 0.2) {
   highOscillator.frequency.setValueAtTime(highFreq, audioCtx.currentTime);
 
   // Set gain
-  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
 
   // Connect oscillators to gain and then to the destination
   lowOscillator.connect(gain);
