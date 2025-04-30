@@ -21,9 +21,14 @@ function createKeyFrequencyMap(seed) {
   let map = {};
 
   keys.forEach((key, index) => {
-    // Generate two frequencies: one low and one high for each key
-    const lowFreq = 200 + Math.floor(seededRandom(seedInt + index) * 1000); // low frequency
-    const highFreq = 1200 + Math.floor(seededRandom(seedInt + index + 100) * 1000); // high frequency
+    let lowFreq = 200 + Math.floor(seededRandom(seedInt + index) * 1000);
+    let highFreq = 1200 + Math.floor(seededRandom(seedInt + index + 100) * 1000);
+
+    // Ensure the frequencies are different
+    if (lowFreq === highFreq) {
+      highFreq = lowFreq + 100; // Make the high frequency 100Hz greater if they are equal
+    }
+
     map[key] = { lowFreq, highFreq };
   });
 
@@ -31,32 +36,35 @@ function createKeyFrequencyMap(seed) {
 }
 
 function playDualTones(lowFreq, highFreq, duration = 0.2) {
+  console.log(`Playing tones: Low - ${lowFreq}Hz, High - ${highFreq}Hz`);
+
   let lowOscillator = audioCtx.createOscillator();
   let highOscillator = audioCtx.createOscillator();
   let gain = audioCtx.createGain();
 
-  // Set frequencies and type
   lowOscillator.type = 'sine';
   highOscillator.type = 'sine';
-  
+
   lowOscillator.frequency.setValueAtTime(lowFreq, audioCtx.currentTime);
   highOscillator.frequency.setValueAtTime(highFreq, audioCtx.currentTime);
 
   gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
 
-  // Connect the oscillators to the gain node and then to the audio context
   lowOscillator.connect(gain);
   highOscillator.connect(gain);
   gain.connect(audioCtx.destination);
 
-  // Start the low frequency
+  // Start the low tone
   lowOscillator.start();
-  // Start the high frequency slightly after the low frequency
-  highOscillator.start(audioCtx.currentTime + duration);
+  console.log('Low tone started');
 
-  // Stop both frequencies after their duration
+  // Start the high tone slightly after the low tone
+  highOscillator.start(audioCtx.currentTime + duration);
+  console.log('High tone started after delay');
+
+  // Stop the oscillators after the duration
   lowOscillator.stop(audioCtx.currentTime + duration);
-  highOscillator.stop(audioCtx.currentTime + duration + 0.2); // Give a little overlap time
+  highOscillator.stop(audioCtx.currentTime + duration + 0.2); // Stop the high tone slightly later
 }
 
 function startEncoder() {
