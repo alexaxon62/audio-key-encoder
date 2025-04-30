@@ -21,26 +21,40 @@ function createKeyFrequencyMap(seed) {
   let map = {};
 
   keys.forEach((key, index) => {
-    const rand = seededRandom(seedInt + index);
-    map[key] = 200 + Math.floor(rand * 1800); // Frequency between 200Hz to 2000Hz
+    // Generate two frequencies: one low and one high for each key
+    const lowFreq = 200 + Math.floor(seededRandom(seedInt + index) * 1000); // low frequency
+    const highFreq = 1200 + Math.floor(seededRandom(seedInt + index + 100) * 1000); // high frequency
+    map[key] = { lowFreq, highFreq };
   });
 
   return map;
 }
 
-function playFrequency(freq, duration = 0.2) {
-  let oscillator = audioCtx.createOscillator();
+function playDualTones(lowFreq, highFreq, duration = 0.2) {
+  let lowOscillator = audioCtx.createOscillator();
+  let highOscillator = audioCtx.createOscillator();
   let gain = audioCtx.createGain();
 
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  // Set frequencies and type
+  lowOscillator.type = 'sine';
+  highOscillator.type = 'sine';
+  
+  lowOscillator.frequency.setValueAtTime(lowFreq, audioCtx.currentTime);
+  highOscillator.frequency.setValueAtTime(highFreq, audioCtx.currentTime);
+
   gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
 
-  oscillator.connect(gain);
+  // Connect the oscillators to the gain node and then to the audio context
+  lowOscillator.connect(gain);
+  highOscillator.connect(gain);
   gain.connect(audioCtx.destination);
 
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + duration);
+  // Start the low frequency, then high frequency
+  lowOscillator.start();
+  highOscillator.start(audioCtx.currentTime + duration);
+
+  lowOscillator.stop(audioCtx.currentTime + duration);
+  highOscillator.stop(audioCtx.currentTime + duration + 0.2); // A little overlap for the second tone
 }
 
 function startEncoder() {
@@ -59,13 +73,14 @@ function startEncoder() {
   }
 
   keyFreqMap = createKeyFrequencyMap(seed);
-  alert("Seed loaded! Now press keys to hear encoded sounds.");
+  alert("Seed loaded! Now press keys to hear dual tone encoded sounds.");
 }
 
 // Listen for keypresses
 document.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase();
   if (keyFreqMap[key]) {
-    playFrequency(keyFreqMap[key]);
+    const { lowFreq, highFreq } = keyFreqMap[key];
+    playDualTones(lowFreq, highFreq);
   }
 });
