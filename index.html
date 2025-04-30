@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Live Audio Encoder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seeded Audio Key Encoder</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Live Audio Key Encoder</h1>
-  <input id="seedInput" placeholder="Enter seed/password" />
-  <button onclick="startEncoder()">Start Encoding</button>
-  <p>Press keys (a-z, 0-9) and hear their sounds based on your seed!</p>
-
+  <h1>Seeded Audio Key Encoder</h1>
+  <label for="seed">Enter Seed (Password):</label>
+  <input type="text" id="seed" placeholder="Type your seed here..." />
+  <p>Press a key to hear encrypted dual-tone audio</p>
   <script src="script.js"></script>
 </body>
 </html>
