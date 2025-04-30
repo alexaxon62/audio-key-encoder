@@ -1,61 +1,53 @@
-let keyFreqMap = {};
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-function seededRandom(seed) {
-  let x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function hashSeedToInt(seed) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash);
-}
-
-function createKeyFrequencyMap(seed) {
-  const keys = "abcdefghijklmnopqrstuvwxyz0123456789".split("");
-  const seedInt = hashSeedToInt(seed);
-  let map = {};
-
-  keys.forEach((key, index) => {
-    const rand = seededRandom(seedInt + index);
-    map[key] = 200 + Math.floor(rand * 1800);
+function hashSeededTones(key, seed) {
+  const input = new TextEncoder().encode(key + seed);
+  return crypto.subtle.digest("SHA-256", input).then(buffer => {
+    const view = new DataView(buffer);
+    // Extract two 32-bit integers from the hash
+    const val1 = view.getUint32(0, true);
+    const val2 = view.getUint32(4, true);
+    const tone1 = 300 + (val1 % 1200); // 300–1500Hz
+    const tone2 = 300 + (val2 % 1200);
+    return [tone1, tone2];
   });
-
-  return map;
 }
 
-function playFrequency(freq, duration = 0.2) {
-  let oscillator = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
+function playTwoTones(freq1, freq2, duration = 0.3) {
+  const oscillator1 = audioCtx.createOscillator();
+  const oscillator2 = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
 
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  oscillator1.type = 'sine';
+  oscillator2.type = 'sine';
+  oscillator1.frequency.value = freq1;
+  oscillator2.frequency.value = freq2;
 
-  oscillator.connect(gain);
-  gain.connect(audioCtx.destination);
+  gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
 
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + duration);
+  oscillator1.connect(gainNode);
+  oscillator2.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+
+  const startTime = audioCtx.currentTime;
+  oscillator1.start(startTime);
+  oscillator2.start(startTime);
+  oscillator1.stop(startTime + duration);
+  oscillator2.stop(startTime + duration);
 }
 
-function startEncoder() {
-  const seed = document.getElementById("seedInput").value;
+document.addEventListener("keydown", (e) => {
+  const seed = document.getElementById("seed").value.trim();
   if (!seed) {
-    alert("Please enter a seed.");
+    console.warn("Seed is required");
     return;
   }
 
-  keyFreqMap = createKeyFrequencyMap(seed);
-  alert("Seed loaded! Now press keys to hear encoded sounds.");
-
-  document.addEventListener("keydown", (e) => {
-    const key = e.key.toLowerCase();
-    if (keyFreqMap[key]) {
-      playFrequency(keyFreqMap[key]);
-    }
-  }, { once: true });
-}
+  const key = e.key.toLowerCase();
+  if (key.length === 1 && key.match(/[a-z0-9]/i)) {
+    hashSeededTones(key, seed).then(([tone1, tone2]) => {
+      console.log(`Key: ${key}, Tone1: ${tone1} Hz, Tone2: ${tone2} Hz`);
+      playTwoTones(tone1, tone2);
+    });
+  }
+});
