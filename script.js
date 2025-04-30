@@ -1,53 +1,65 @@
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // Create audio context
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let isAudioUnlocked = false;
 
-function playTwoTones(freq1, freq2, duration = 0.2) {
-  // Create two oscillators (one for each tone)
-  let oscillator1 = audioCtx.createOscillator();
-  let oscillator2 = audioCtx.createOscillator();
+function playDualTones(lowFreq, highFreq, duration = 0.2) {
+  // Ensure the AudioContext is unlocked and resumed when needed
+  if (!isAudioUnlocked && audioCtx.state === "suspended") {
+    audioCtx.resume().then(() => {
+      console.log("AudioContext resumed!");
+      isAudioUnlocked = true;
+    });
+  }
+
+  // Log frequencies to confirm they are being passed correctly
+  console.log(`Playing tones: Low - ${lowFreq}Hz, High - ${highFreq}Hz`);
+
+  // Create oscillators
+  let lowOscillator = audioCtx.createOscillator();
+  let highOscillator = audioCtx.createOscillator();
   let gain = audioCtx.createGain();
 
   // Set oscillator types and frequencies
-  oscillator1.type = 'sine';  // sine wave for oscillator 1
-  oscillator2.type = 'sine';  // sine wave for oscillator 2
-  oscillator1.frequency.setValueAtTime(freq1, audioCtx.currentTime);
-  oscillator2.frequency.setValueAtTime(freq2, audioCtx.currentTime);
+  lowOscillator.type = 'sine';
+  highOscillator.type = 'sine';
+  lowOscillator.frequency.setValueAtTime(lowFreq, audioCtx.currentTime);
+  highOscillator.frequency.setValueAtTime(highFreq, audioCtx.currentTime);
 
-  // Set gain (volume control)
+  // Set gain level
   gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
 
-  // Connect both oscillators to the gain, then to the speakers (destination)
-  oscillator1.connect(gain);
-  oscillator2.connect(gain);
+  // Connect oscillators to the gain node, then to the destination (speaker)
+  lowOscillator.connect(gain);
+  highOscillator.connect(gain);
   gain.connect(audioCtx.destination);
 
-  // Get the current time (when both tones will start)
+  // Log the time both oscillators should start
   let startTime = audioCtx.currentTime;
+  console.log(`Start time for both tones: ${startTime}`);
 
-  // Start both oscillators at the same time
-  oscillator1.start(startTime);
-  oscillator2.start(startTime);
+  // Start both oscillators at the same exact time
+  lowOscillator.start(startTime);
+  highOscillator.start(startTime);
 
-  // Stop the oscillators after the specified duration
-  oscillator1.stop(startTime + duration);
-  oscillator2.stop(startTime + duration);
+  // Stop both oscillators after the given duration
+  lowOscillator.stop(startTime + duration);
+  highOscillator.stop(startTime + duration);
+
+  console.log('Tones should be playing simultaneously');
 }
 
 // Event listener for keydown to trigger dual tone playback
 document.addEventListener("keydown", (e) => {
-  console.log(`Key pressed: ${e.key}`);  // Log key press
-
-  // Define a map of key presses to frequencies
+  console.log(`Key pressed: ${e.key}`);  // Log the key press
   const keyFreqMap = {
-    'a': { tone1: 440, tone2: 880 },  // Example: A key -> Tone 1: 440Hz, Tone 2: 880Hz
-    'b': { tone1: 523, tone2: 1046 }, // Example: B key -> Tone 1: 523Hz, Tone 2: 1046Hz
-    'c': { tone1: 261, tone2: 523 },  // Example: C key -> Tone 1: 261Hz, Tone 2: 523Hz
-    // Add other keys with different frequencies as needed
+    'a': { lowFreq: 772, highFreq: 1487 },
+    'b': { lowFreq: 880, highFreq: 1567 },
+    'c': { lowFreq: 1000, highFreq: 1750 },
+    // Add more mappings as needed
   };
 
-  // Get the corresponding frequencies for the pressed key
   const key = e.key.toLowerCase();
   if (keyFreqMap[key]) {
-    const { tone1, tone2 } = keyFreqMap[key];
-    playTwoTones(tone1, tone2);  // Play two tones simultaneously
+    const { lowFreq, highFreq } = keyFreqMap[key];
+    playDualTones(lowFreq, highFreq);
   }
 });
