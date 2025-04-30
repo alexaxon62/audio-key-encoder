@@ -21,26 +21,31 @@ function createKeyFrequencyMap(seed) {
   let map = {};
 
   keys.forEach((key, index) => {
-    const rand = seededRandom(seedInt + index);
-    map[key] = 200 + Math.floor(rand * 1800); // Frequency between 200Hz to 2000Hz
+    const rand1 = seededRandom(seedInt + index);
+    const rand2 = seededRandom(seedInt + index + 100); // offset for second tone
+    const freq1 = 200 + Math.floor(rand1 * 1800); // Frequency between 200Hz to 2000Hz
+    const freq2 = 200 + Math.floor(rand2 * 1800);
+    map[key] = [freq1, freq2];
   });
 
   return map;
 }
 
-function playFrequency(freq, duration = 0.2) {
-  let oscillator = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
+function playFrequencies(freqArray, duration = 0.2) {
+  freqArray.forEach(freq => {
+    let oscillator = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
 
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
 
-  oscillator.connect(gain);
-  gain.connect(audioCtx.destination);
+    oscillator.connect(gain);
+    gain.connect(audioCtx.destination);
 
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + duration);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration);
+  });
 }
 
 function startEncoder() {
@@ -50,7 +55,6 @@ function startEncoder() {
     return;
   }
 
-  // Unlock audio on first interaction (button click)
   if (!isAudioUnlocked) {
     if (audioCtx.state === "suspended") {
       audioCtx.resume();
@@ -62,10 +66,9 @@ function startEncoder() {
   alert("Seed loaded! Now press keys to hear encoded sounds.");
 }
 
-// Listen for keypresses
 document.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase();
   if (keyFreqMap[key]) {
-    playFrequency(keyFreqMap[key]);
+    playFrequencies(keyFreqMap[key]);
   }
 });
